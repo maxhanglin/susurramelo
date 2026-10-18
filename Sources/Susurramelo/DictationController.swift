@@ -18,10 +18,16 @@ final class DictationController {
     private let bar = FloatingBar()
     private var capture: AudioCapture?
     private var client: ScribeClient?
+    private var recordingStartedAt: Date?
+    private let preferences: Preferences
+    private let history: HistoryController
 
-    /// Empty means automatic language detection.
-    var languageCode: String?
     var onStatusChange: ((Status) -> Void)?
+
+    init(preferences: Preferences, history: HistoryController) {
+        self.preferences = preferences
+        self.history = history
+    }
 
     private(set) var status: Status = .idle {
         didSet {
@@ -81,7 +87,8 @@ final class DictationController {
             status = .error("Set your ElevenLabs API key first")
             return
         }
-        let client = ScribeClient(apiKey: apiKey, languageCode: languageCode)
+        let language = preferences.languageCode.isEmpty ? nil : preferences.languageCode
+        let client = ScribeClient(apiKey: apiKey, languageCode: language)
         let capture = AudioCapture()
         var bytesSent = 0
         capture.onChunk = { [weak client] chunk in
@@ -102,6 +109,7 @@ final class DictationController {
         }
         self.client = client
         self.capture = capture
+        recordingStartedAt = Date()
         status = .recording
     }
 
@@ -109,6 +117,7 @@ final class DictationController {
         guard let client, let capture else { return }
         capture.stop()
         self.capture = nil
+        let duration = recordingStartedAt.map { Date().timeIntervalSince($0) } ?? 0
         status = .transcribing
         client.commit(trailingAudio: Data()) { [weak self] outcome in
             // Ignore completions from a session that is no longer current (e.g. cancelled with Esc).
@@ -117,14 +126,35 @@ final class DictationController {
             switch outcome {
             case let .transcript(text):
                 let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-                if !trimmed.isEmpty, TextInserter.insert(trimmed) == .copiedOnly {
-                    self.status = .error("Accessibility permission missing — text copied, press Cmd+V")
-                } else {
+                guard !trimmed.isEmpty else {
                     self.status = .idle
+                    return
                 }
+                let appName = NSWorkspace.shared.frontmostApplication?.localizedName
+                self.history.record(text: trimmed, duration: duration, appName: appName)
+                self.insert(trimmed)
             case let .failure(message):
                 self.status = .error(message)
             }
+        }
+    }
+
+    /// Pastes the most recent transcript at the cursor (Ctrl+Cmd+V).
+    func pasteLast() {
+        guard status == .idle || isErrorStatus, let last = history.history.last else { return }
+        insert(last.text)
+    }
+
+    private var isErrorStatus: Bool {
+        if case .error = status { return true }
+        return false
+    }
+
+    private func insert(_ text: String) {
+        if TextInserter.insert(text) == .copiedOnly {
+            status = .error("Accessibility permission missing — text copied, press Cmd+V")
+        } else {
+            status = .idle
         }
     }
 

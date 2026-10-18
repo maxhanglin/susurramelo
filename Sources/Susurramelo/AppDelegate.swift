@@ -1,11 +1,17 @@
 import AppKit
 import AVFoundation
+import Carbon.HIToolbox
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private let statusLine = NSMenuItem(title: "Idle", action: nil, keyEquivalent: "")
     private let accessibilityItem = NSMenuItem(title: "Grant Accessibility Permission…", action: #selector(openAccessibilitySettings), keyEquivalent: "")
-    private let dictation = DictationController()
+    private let pasteLastItem = NSMenuItem(title: "Paste Last Transcript", action: #selector(pasteLast), keyEquivalent: "")
+    private let lastPreviewItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+    let preferences = Preferences()
+    lazy var history = HistoryController(preferences: preferences)
+    private lazy var dictation = DictationController(preferences: preferences, history: history)
+    private var pasteLastShortcut: GlobalShortcut?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
@@ -17,6 +23,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         AVCaptureDevice.requestAccess(for: .audio) { _ in }
         promptForAccessibilityIfNeeded()
         dictation.start()
+        pasteLastShortcut = GlobalShortcut(keyCode: UInt32(kVK_ANSI_V), modifiers: UInt32(cmdKey | controlKey)) { [weak self] in
+            self?.dictation.pasteLast()
+        }
 
         if KeychainStore.load() == nil { setAPIKey() }
     }
@@ -42,6 +51,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(statusLine)
         menu.addItem(NSMenuItem(title: "Hold Right Option to dictate · double-tap for hands-free · Esc cancels", action: nil, keyEquivalent: ""))
         menu.addItem(.separator())
+        pasteLastItem.target = self
+        pasteLastItem.keyEquivalent = "v"
+        pasteLastItem.keyEquivalentModifierMask = [.command, .control]
+        menu.addItem(pasteLastItem)
+        lastPreviewItem.isEnabled = false
+        menu.addItem(lastPreviewItem)
+        menu.addItem(.separator())
         menu.addItem(withTitle: "Set ElevenLabs API Key…", action: #selector(setAPIKey), keyEquivalent: "").target = self
         accessibilityItem.target = self
         menu.addItem(accessibilityItem)
@@ -66,6 +82,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func promptForAccessibilityIfNeeded() {
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
         _ = AXIsProcessTrustedWithOptions(options)
+    }
+
+    @objc private func pasteLast() {
+        // Let the menu close and focus return to the previous app before pasting.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { self.dictation.pasteLast() }
     }
 
     @objc private func openAccessibilitySettings() {
@@ -94,5 +115,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 extension AppDelegate: NSMenuDelegate {
     func menuWillOpen(_ menu: NSMenu) {
         accessibilityItem.isHidden = AXIsProcessTrusted()
+        let last = history.history.last
+        pasteLastItem.isEnabled = last != nil
+        lastPreviewItem.title = last.map { "   “" + Self.preview($0.text) + "”" } ?? "   No dictations yet"
+    }
+
+    private static func preview(_ text: String) -> String {
+        let line = text.replacingOccurrences(of: "\n", with: " ")
+        return line.count > 48 ? String(line.prefix(48)) + "…" : line
     }
 }
