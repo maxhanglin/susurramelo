@@ -15,10 +15,10 @@ Branch: `feat/dictionary` (from `feat/hub-history`) · Delivery: `ask-on-risk` �
 
 | ID | Specs | Route | Status | Evidence |
 |----|-------|-------|--------|----------|
-| T1 | S2, S3, S5 | inline | pending | |
-| T2 | S2, S3 | inline | pending | |
-| T3 | S4 | inline | pending | |
-| T4 | S1–S5 | inline | pending | |
+| T1 | S2, S3, S5 | inline | done | 24df6c3 — RED→GREEN 55/55 (UserDictionaryTests 11, incl. '+' encoding) |
+| T2 | S2, S3 | inline | done | 1f4f082 — self-test with keyterms: 'Susurrámelo' → 'Susurramelo' |
+| T3 | S4 | inline | done | 1f4f082 — snapshot renders light/dark |
+| T4 | S1–S5 | inline | pending | app rebuilt + relaunched; awaiting user check |
 
 - T1: Core `UserDictionary` (validation, keyterms selection, replacements, persistence) and `ScribeProtocol.realtimeURL(..., keyterms:)`, test-first.
 - T2: Load the dictionary in the app; send keyterms on connect; apply replacements to the transcript.
@@ -29,3 +29,5 @@ Branch: `feat/dictionary` (from `feat/hub-history`) · Delivery: `ask-on-risk` �
 
 - L1 (2026-10-18, user): "si dale"
 - L2: Verified in elevenlabs-js `src/wrapper/realtime/scribe.ts`: keyterms are appended as repeated `keyterms` query params; max 50, each ≤ 20 chars. Pricing page (researched earlier): keyterms +20%.
+- L3: Found while testing: URLComponents leaves '+' unescaped (server would read a space); fixed with %2B and a test.
+- L4: Live self-test against ElevenLabs with keyterms [Susurramelo, C++, ElevenLabs]: accepted; transcript changed from 'Susurrámelo' (no keyterms) to 'Susurramelo'.
