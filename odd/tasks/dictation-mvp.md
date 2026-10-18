@@ -24,7 +24,7 @@ Branch: `feat/dictation-mvp` · Delivery: `ask-on-risk` · Test runner: `swift t
 | T3 | S2 | inline | done | aa09b84 — PushToTalkTests 5/5 |
 | T4 | S3, S4 | inline | done (build only) | a4df5e2 — compiles; runtime unverified |
 | T5 | S5, S6, S7, S8 | inline | done (build only) | a4df5e2 — compiles; runtime unverified |
-| T6 | S1–S8 | inline | pending | bundle builds + ad-hoc signed; awaiting manual e2e by user (needs their API key, mic, Accessibility) |
+| T6 | S1–S8 | inline | pending | 4971273 bundle; 93dad2b fixes; RDD approved; manual e2e by user still pending (needs their API key, mic, Accessibility) |
 
 - T1: git repo, SwiftPM package (Core library + app executable + tests), `.gitignore`.
 - T2: Core: PCM Float32→Int16 conversion/resampling helpers, Scribe message encoding/decoding (test-first).
@@ -42,3 +42,5 @@ Route evidence: no Writer trigger (no parallel disjoint units launched together,
 - L4: XCTest is unavailable with CommandLineTools only; tests use swift-testing (`import Testing`), which works once `platforms` is declared. Package uses tools 6.0 with Swift 5 language mode.
 - L5: RDD assess after aa09b84: risk medium, review_due false (under_budget).
 - L6: Known limitation: ad-hoc signing means Accessibility grants may need re-adding after each rebuild. A stable self-signed certificate would fix it later.
+- L7: Independent verifier on aa09b84..4971273 found one blocker. B1: a new key press during transcription replaced the session and left the mic running. It also reported advisories A1-A10. One correction batch landed in 93dad2b: it fixes B1 (ignores key-down while transcribing, identity-guards the completion, `deinit` cancels the socket), A1 (Right Option device mask 0x40), A2 (clipboard restore skipped if changeCount moved, TransientType), and A7 (`unaccepted_terms`, test RED→GREEN, 16/16). Recheck limited to B1: resolved by diff inspection.
+- L8: RDD lineage review-9a32ae151e4e0b7f on target sha256:c44284ed… (HEAD 93dad2b): consent granted by the user; lenses risk/resilience/reliability; approved and acknowledged (gentle-ai.review-acknowledged/v1). The earlier lineage review-10de9661a6c5113f was superseded before consent was applied. The 12 non-blocking advisories are follow-up work: Accessibility granted after launch, early session errors not surfaced while recording, Keychain delete-before-add, ScribeClient lifecycle untested, audio route changes, mic-denied hint, fixed-delay clipboard restore.
