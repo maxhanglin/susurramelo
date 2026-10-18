@@ -18,9 +18,9 @@ Branch: `feat/notetaker` (from `main`) · Delivery: `ask-on-risk` · Test runner
 | ID | Specs | Route | Status | Evidence |
 |----|-------|-------|--------|----------|
 | T1 | S4 | inline | done | live API test, see L3 |
-| T2 | S3, S5, S6 | inline | pending | |
-| T3 | S4 | inline | pending | |
-| T4 | S2, S3 | inline | pending | |
+| T2 | S3, S5, S6 | inline | done | 2d9da93 + EnergyTrack — RED→GREEN 71/71 |
+| T3 | S4 | inline | done | ce0bd18 BatchTranscriber (multipart streamed from disk) |
+| T4 | S2, S3 | inline | partial | recorder written (mic AAC + Core Audio process tap); post-processing verified with --meeting-test on simulated meeting (me detected, 6 turns correct); live capture untested (needs System Audio Recording permission) |
 | T5 | S2, S5, S6 | inline | pending | |
 | T6 | S1–S6 | inline | pending | |
 
@@ -38,3 +38,5 @@ Route evidence: T3 and T4 are independent but each lighter than spinning a write
 - L1 (2026-10-18, user): see S1.
 - L2: Prior research (Engram): diarization only in batch (`diarize`, `num_speakers` ≤32, `diarization_threshold`); multichannel `use_multi_channel` (≤5 channels, billed per channel); docs conflict on multichannel max duration (1 h vs 10 h); unknown whether diarize + multichannel combine. Measured realtime cost ~30 credits/min; batch should be cheaper (USD $0.22/h vs $0.39/h).
 - L3 (T1 spike, 2026-10-18): Simulated 28.8 s meeting (me=Paulina left; Eddy + Mónica right). Results — mono mix + `diarize=true`: 3 speakers / 6 turns all correct, 1.4 s latency. `use_multi_channel` (combined): merges both remote voices into one speaker (labels by channel only). `use_multi_channel` + `diarize`: HTTP 400 "Multichannel mode does not support diarization". Decision: record stereo locally, upload mono mixdown with diarize (1× cost), detect "Me" locally by channel energy.
+- L4: Design refinement: record `mic.m4a` + `system.m4a` (AAC) during the meeting; afterwards stream-mix to 16 kHz mono `audio.m4a` and store 100 ms RMS energy tracks (`energy.json`) — no large stereo file. Minimum macOS raised to 14.2 for `AudioHardwareCreateProcessTap`.
+- L5: `--meeting-test` on simulated meeting: me=speaker_0, transcript 6 turns correct with names Me / Speaker 2 / Speaker 3.
