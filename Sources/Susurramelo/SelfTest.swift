@@ -16,7 +16,11 @@ enum SelfTest {
         guard let apiKey = KeychainStore.load(), !apiKey.isEmpty else { fail("no API key in the Keychain") }
 
         print("Streaming \(pcm.count) bytes (\(Double(pcm.count) / 2 / Double(PCM.sampleRate)) s)…")
-        let client = ScribeClient(apiKey: apiKey, languageCode: nil)
+        // Optional: --keyterms "Word1,Word2" to check the server accepts them.
+        let keyterms = args.firstIndex(of: "--keyterms").flatMap { $0 + 1 < args.count ? args[$0 + 1] : nil }?
+            .split(separator: ",").map(String.init) ?? []
+        if !keyterms.isEmpty { print("Keyterms: \(keyterms)") }
+        let client = ScribeClient(apiKey: apiKey, languageCode: nil, keyterms: keyterms)
         client.onPartial = { print("partial: \($0)") }
         client.connect()
         // Real-time pacing: 100 ms chunks every 100 ms, like the microphone.

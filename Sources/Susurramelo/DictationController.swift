@@ -21,12 +21,14 @@ final class DictationController {
     private var recordingStartedAt: Date?
     private let preferences: Preferences
     private let history: HistoryController
+    private let dictionary: DictionaryController
 
     var onStatusChange: ((Status) -> Void)?
 
-    init(preferences: Preferences, history: HistoryController) {
+    init(preferences: Preferences, history: HistoryController, dictionary: DictionaryController) {
         self.preferences = preferences
         self.history = history
+        self.dictionary = dictionary
     }
 
     private(set) var status: Status = .idle {
@@ -88,7 +90,7 @@ final class DictationController {
             return
         }
         let language = preferences.languageCode.isEmpty ? nil : preferences.languageCode
-        let client = ScribeClient(apiKey: apiKey, languageCode: language)
+        let client = ScribeClient(apiKey: apiKey, languageCode: language, keyterms: dictionary.dictionary.keyterms)
         let capture = AudioCapture()
         var bytesSent = 0
         capture.onChunk = { [weak client] chunk in
@@ -125,7 +127,7 @@ final class DictationController {
             self.client = nil
             switch outcome {
             case let .transcript(text):
-                let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                let trimmed = self.dictionary.dictionary.apply(to: text).trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmed.isEmpty else {
                     self.status = .idle
                     return

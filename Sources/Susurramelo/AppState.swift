@@ -87,3 +87,42 @@ final class HistoryController: ObservableObject {
         }
     }
 }
+
+/// Personal dictionary kept in memory and mirrored to Application Support.
+final class DictionaryController: ObservableObject {
+    @Published private(set) var dictionary: UserDictionary
+    private let url: URL
+
+    static var defaultURL: URL {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("Susurramelo/dictionary.json")
+    }
+
+    init(url: URL = DictionaryController.defaultURL) {
+        self.url = url
+        do {
+            dictionary = try UserDictionary.load(from: url)
+        } catch {
+            Log.dictation.error("Could not load dictionary: \(error.localizedDescription, privacy: .public)")
+            dictionary = UserDictionary()
+        }
+    }
+
+    func add(term: String, replacing: String?) throws {
+        try dictionary.add(term: term, replacing: replacing)
+        save()
+    }
+
+    func delete(_ entry: DictionaryEntry) {
+        dictionary.delete(id: entry.id)
+        save()
+    }
+
+    private func save() {
+        do {
+            try dictionary.save(to: url)
+        } catch {
+            Log.dictation.error("Could not save dictionary: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+}

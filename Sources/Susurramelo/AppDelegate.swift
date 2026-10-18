@@ -10,10 +10,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let lastPreviewItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
     let preferences = Preferences()
     lazy var history = HistoryController(preferences: preferences)
-    private lazy var dictation = DictationController(preferences: preferences, history: history)
+    let dictionary = DictionaryController()
+    private lazy var dictation = DictationController(preferences: preferences, history: history, dictionary: dictionary)
     private var pasteLastShortcut: GlobalShortcut?
     private lazy var mainWindow = MainWindowController { [unowned self] in
-        MainView(history: self.history, preferences: self.preferences, onChangeAPIKey: { [unowned self] in self.setAPIKey() })
+        MainView(history: self.history, preferences: self.preferences, dictionary: self.dictionary, onChangeAPIKey: { [unowned self] in self.setAPIKey() })
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {

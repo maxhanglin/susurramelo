@@ -22,8 +22,8 @@ final class ScribeClient {
     /// Delivered on the main queue.
     var onPartial: ((String) -> Void)?
 
-    init(apiKey: String, languageCode: String?) {
-        var request = URLRequest(url: ScribeProtocol.realtimeURL(languageCode: languageCode))
+    init(apiKey: String, languageCode: String?, keyterms: [String] = []) {
+        var request = URLRequest(url: ScribeProtocol.realtimeURL(languageCode: languageCode, keyterms: keyterms))
         request.setValue(apiKey, forHTTPHeaderField: ScribeProtocol.apiKeyHeader)
         task = URLSession.shared.webSocketTask(with: request)
     }

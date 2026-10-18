@@ -16,14 +16,19 @@ enum Snapshot {
         defer { try? FileManager.default.removeItem(at: tmp) }
         let preferences = Preferences()
         let history = HistoryController(preferences: preferences, url: tmp)
-        for (offset, sample) in samples.enumerated().reversed() {
+        for sample in samples.reversed() {
             history.record(text: sample.text, duration: sample.duration, appName: sample.app)
-            _ = offset
         }
+        let dictTmp = tmp.deletingPathExtension().appendingPathExtension("dict.json")
+        defer { try? FileManager.default.removeItem(at: dictTmp) }
+        let dictionary = DictionaryController(url: dictTmp)
+        try? dictionary.add(term: "ElevenLabs", replacing: nil)
+        try? dictionary.add(term: "Figma", replacing: nil)
+        try? dictionary.add(term: "Susurramelo", replacing: "Susurrámelo")
 
         for page in Page.allCases {
             for (name, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
-                let view = MainView(history: history, preferences: preferences, onChangeAPIKey: {}, page: page)
+                let view = MainView(history: history, preferences: preferences, dictionary: dictionary, onChangeAPIKey: {}, page: page)
                     .frame(width: 1080, height: 720)
                 let host = NSHostingView(rootView: view)
                 host.frame = NSRect(x: 0, y: 0, width: 1080, height: 720)

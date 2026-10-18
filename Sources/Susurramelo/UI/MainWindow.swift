@@ -2,13 +2,14 @@ import AppKit
 import SwiftUI
 
 enum Page: String, CaseIterable, Identifiable {
-    case home, insights, notetaker, settings
+    case home, dictionary, insights, notetaker, settings
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
         case .home: "Home"
+        case .dictionary: "Dictionary"
         case .insights: "Insights"
         case .notetaker: "Notetaker"
         case .settings: "Settings"
@@ -18,6 +19,7 @@ enum Page: String, CaseIterable, Identifiable {
     var icon: String {
         switch self {
         case .home: "house"
+        case .dictionary: "character.book.closed"
         case .insights: "chart.bar.xaxis"
         case .notetaker: "person.2.wave.2"
         case .settings: "gearshape"
@@ -72,6 +74,7 @@ final class MainWindowController: NSObject, NSWindowDelegate {
 struct MainView: View {
     @ObservedObject var history: HistoryController
     @ObservedObject var preferences: Preferences
+    @ObservedObject var dictionary: DictionaryController
     let onChangeAPIKey: () -> Void
     @State var page: Page = .home
 
@@ -96,6 +99,7 @@ struct MainView: View {
     @ViewBuilder private var content: some View {
         switch page {
         case .home: HomeView(history: history)
+        case .dictionary: DictionaryView(dictionary: dictionary)
         case .insights: UpcomingView(page: .insights)
         case .notetaker: UpcomingView(page: .notetaker)
         case .settings: SettingsView(history: history, preferences: preferences, onChangeAPIKey: onChangeAPIKey)
@@ -117,7 +121,7 @@ private struct Sidebar: View {
             .padding(.horizontal, 8)
             .padding(.bottom, 16)
 
-            ForEach([Page.home, .insights, .notetaker]) { item in
+            ForEach([Page.home, .dictionary, .insights, .notetaker]) { item in
                 NavItem(page: item, selection: $page)
             }
 
