@@ -19,12 +19,12 @@ Branch: `feat/dictation-mvp` · Delivery: `ask-on-risk` · Test runner: `swift t
 
 | ID | Specs | Route | Status | Evidence |
 |----|-------|-------|--------|----------|
-| T1 | S1 | inline | pending | |
-| T2 | S3, S4 | inline | pending | |
-| T3 | S2 | inline | pending | |
-| T4 | S3, S4 | inline | pending | |
-| T5 | S5, S6, S7, S8 | inline | pending | |
-| T6 | S1–S8 | inline | pending | |
+| T1 | S1 | inline | done | d3f65a0, aa09b84 |
+| T2 | S3, S4 | inline | done | aa09b84 — RED: types missing; GREEN: 16/16 swift-testing |
+| T3 | S2 | inline | done | aa09b84 — PushToTalkTests 5/5 |
+| T4 | S3, S4 | inline | done (build only) | a4df5e2 — compiles; runtime unverified |
+| T5 | S5, S6, S7, S8 | inline | done (build only) | a4df5e2 — compiles; runtime unverified |
+| T6 | S1–S8 | inline | pending | bundle builds + ad-hoc signed; awaiting manual e2e by user (needs their API key, mic, Accessibility) |
 
 - T1: git repo, SwiftPM package (Core library + app executable + tests), `.gitignore`.
 - T2: Core: PCM Float32→Int16 conversion/resampling helpers, Scribe message encoding/decoding (test-first).
@@ -39,3 +39,6 @@ Route evidence: no Writer trigger (no parallel disjoint units launched together,
 
 - L1 (2026-10-18, user): "me gustaría replicar la funcionalidad de dictado completa, incluida la transcripción de reuniones (esta puede esperar), que se te ocurre" → "tengo suscripcion a eleven labs, nos serviría?" → "swift nativo, dale vamos con un MVP"
 - L3: ElevenLabs realtime wire format verified from the official elevenlabs-js SDK source (`src/wrapper/realtime/connection.ts`, `scribe.ts`): snake_case fields above; realtime accepts PCM/μ-law only (no Opus).
+- L4: XCTest is unavailable with CommandLineTools only; tests use swift-testing (`import Testing`), which works once `platforms` is declared. Package uses tools 6.0 with Swift 5 language mode.
+- L5: RDD assess after aa09b84: risk medium, review_due false (under_budget).
+- L6: Known limitation: ad-hoc signing means Accessibility grants may need re-adding after each rebuild. A stable self-signed certificate would fix it later.
