@@ -41,3 +41,7 @@ Relaunch, grant Accessibility again, and relaunch once more.
 Hold key → `AVAudioEngine` captures the mic → 16 kHz mono Int16 PCM → streamed over WebSocket to Scribe → release sends `commit: true` → the committed transcript is pasted (Cmd+V) and your clipboard is restored.
 
 Taps shorter than 250 ms are ignored.
+
+## License
+
+[MIT](LICENSE) © 2026 Max Hanglin
