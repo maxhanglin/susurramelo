@@ -3,6 +3,7 @@ import AppKit
 SelfTest.runIfRequested()
 UsageReport.runIfRequested()
 BatchTest.runIfRequested()
+MeetingPipelineTest.runIfRequested()
 Snapshot.runIfRequested()
 
 let app = NSApplication.shared

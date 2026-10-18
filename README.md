@@ -4,7 +4,7 @@ Native macOS menu-bar dictation: hold **Right Option**, speak, release — the t
 
 ## Build
 
-Requires macOS 14+ and the Swift 6 toolchain (Xcode Command Line Tools are enough).
+Requires macOS 14.2+ and the Swift 6 toolchain (Xcode Command Line Tools are enough).
 
 ```bash
 scripts/create-signing-identity.sh   # once per Mac: stable local signing identity
