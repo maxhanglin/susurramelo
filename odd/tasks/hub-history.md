@@ -22,7 +22,7 @@ Branch: `feat/hub-history` (from `feat/floating-bar`) · Delivery: `ask-on-risk`
 | T2 | S3, S5 | inline | done (build only) | e26228e — Carbon hotkey ⌃⌘V, menu preview |
 | T3 | S2, S4, S6, S8 | inline | done | ce17d16 — verified via --snapshot renders (light/dark, all pages) |
 | T4 | S2, S7 | inline | done | ce17d16 — verified via --snapshot renders |
-| T5 | S1–S8 | inline | pending | app rebuilt (stable signature) and relaunched; awaiting user check |
+| T5 | S1–S8 | inline | done | user: "Me encanta, quedó buenísima la pantalla." |
 
 - T1: Core `HistoryStore` (add, delete, clear, newest-first, cap, retention purge, stats, JSON round-trip), test-first.
 - T2: Record entries after paste; Carbon global hotkey Ctrl+Cmd+V for paste last; menu item with preview.
@@ -40,3 +40,4 @@ Route evidence: style spec gathered by a read-only explorer (mapping trigger: mi
 - L4: Added `--snapshot <dir>` (renders all pages light/dark with sample data in a temp file) for visual QA. Fixed: logo now a code-drawn BrandMark; sidebar 236 pt; badge shrunk so "Upcoming" fits.
 - L5: RDD assess 448ef37..ce17d16: medium, under_budget.
 - L6 (2026-10-18, user, mid-task): "investiga si elevenlabs puede reconocer diferentes voces en una grabación, nos serviría mucho para la parte de notetaking" → answered: diarization batch-only (Scribe v2 `diarize`, up to 32 speakers; multichannel option), not realtime. Saved in Engram for the notetaker feature.
+- L7 (2026-10-18, user): "Me encanta, quedó buenísima la pantalla. Ehm, vamos a seguir. ¿Con qué seguimos?" All tasks done.
