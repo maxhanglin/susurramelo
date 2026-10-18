@@ -18,6 +18,8 @@ final class AudioCapture {
 
     /// Called on the audio thread with each converted chunk.
     var onChunk: ((Data) -> Void)?
+    /// Called on the audio thread with the chunk's loudness (0…1).
+    var onLevel: ((Float) -> Void)?
 
     func start() throws {
         let input = engine.inputNode
@@ -27,8 +29,8 @@ final class AudioCapture {
         }
         self.converter = converter
 
-        // ~100 ms buffers keep latency low without flooding the socket.
-        let bufferSize = AVAudioFrameCount(inputFormat.sampleRate / 10)
+        // ~20 ms buffers: smooth waveform updates and low streaming latency.
+        let bufferSize = AVAudioFrameCount(inputFormat.sampleRate / 50)
         input.installTap(onBus: 0, bufferSize: bufferSize, format: inputFormat) { [weak self] buffer, _ in
             self?.convert(buffer)
         }
@@ -61,6 +63,7 @@ final class AudioCapture {
         }
         guard error == nil, output.frameLength > 0, let channel = output.floatChannelData?[0] else { return }
         let samples = UnsafeBufferPointer(start: channel, count: Int(output.frameLength))
+        onLevel?(AudioLevel.normalized(samples: samples))
         onChunk?(PCM.int16LittleEndianData(from: samples))
     }
 }

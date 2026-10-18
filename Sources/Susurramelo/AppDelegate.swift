@@ -40,7 +40,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let menu = NSMenu()
         statusLine.isEnabled = false
         menu.addItem(statusLine)
-        menu.addItem(NSMenuItem(title: "Hold Right Option to dictate", action: nil, keyEquivalent: ""))
+        menu.addItem(NSMenuItem(title: "Hold Right Option to dictate · double-tap for hands-free · Esc cancels", action: nil, keyEquivalent: ""))
         menu.addItem(.separator())
         menu.addItem(withTitle: "Set ElevenLabs API Key…", action: #selector(setAPIKey), keyEquivalent: "").target = self
         accessibilityItem.target = self
@@ -55,6 +55,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let (symbol, text): (String, String) = switch status {
         case .idle: ("mic", "Idle")
         case .recording: ("mic.fill", "Listening…")
+        case .handsFree: ("lock.fill", "Hands-free — press Right Option to finish, Esc to cancel")
         case .transcribing: ("ellipsis.circle", "Transcribing…")
         case let .error(message): ("exclamationmark.triangle", "Error: \(message)")
         }
