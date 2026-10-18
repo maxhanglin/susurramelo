@@ -9,6 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        installEditMenu()
         buildMenu()
         dictation.onStatusChange = { [weak self] in self?.render($0) }
         render(.idle)
@@ -18,6 +19,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         dictation.start()
 
         if KeychainStore.load() == nil { setAPIKey() }
+    }
+
+    /// Menu-bar apps have no main menu, so Cmd+V/C/X/A never reach text fields (e.g. the API key alert).
+    /// A main menu with an Edit submenu routes those key equivalents; it stays hidden for an accessory app.
+    private func installEditMenu() {
+        let edit = NSMenu(title: "Edit")
+        edit.addItem(withTitle: "Cut", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+        edit.addItem(withTitle: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        edit.addItem(withTitle: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+        edit.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        let editItem = NSMenuItem(title: "Edit", action: nil, keyEquivalent: "")
+        editItem.submenu = edit
+        let main = NSMenu()
+        main.addItem(editItem)
+        NSApp.mainMenu = main
     }
 
     private func buildMenu() {
