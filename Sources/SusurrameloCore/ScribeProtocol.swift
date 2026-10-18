@@ -24,7 +24,7 @@ public enum ScribeProtocol {
         "chunk_size_exceeded", "insufficient_audio_activity",
     ]
 
-    public static func realtimeURL(languageCode: String?) -> URL {
+    public static func realtimeURL(languageCode: String?, keyterms: [String] = []) -> URL {
         var components = URLComponents()
         components.scheme = "wss"
         components.host = "api.elevenlabs.io"
@@ -37,7 +37,11 @@ public enum ScribeProtocol {
         if let languageCode, !languageCode.isEmpty {
             items.append(URLQueryItem(name: "language_code", value: languageCode))
         }
+        // Repeated parameter, as the official SDK sends it.
+        items += keyterms.map { URLQueryItem(name: "keyterms", value: $0) }
         components.queryItems = items
+        // URLComponents leaves "+" unescaped, but servers decode it as a space in queries.
+        components.percentEncodedQuery = components.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
         return components.url!
     }
 
