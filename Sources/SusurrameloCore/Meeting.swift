@@ -171,6 +171,9 @@ public struct Meeting: Codable, Equatable, Identifiable, Sendable {
     public var speakerNames: [String: String] = [:]
     public var meSpeakerID: String?
     public var languageCode: String?
+    /// Set when the last upload failed for lack of network; retried automatically when it returns.
+    /// Optional so meetings saved by earlier versions still decode.
+    public var waitingForNetwork: Bool?
 
     public init(id: UUID = UUID(), title: String, date: Date) {
         self.id = id

@@ -1,4 +1,5 @@
 import AppKit
+import Network
 import SusurrameloCore
 
 /// Owns the meeting list, the active recording and post-meeting transcription. Main thread.
@@ -11,6 +12,8 @@ final class NotetakerController: ObservableObject {
     private let preferences: Preferences
     private let dictionary: DictionaryController
     private var recorder: MeetingRecorder?
+    private let retryPolicy = RetryPolicy()
+    private let pathMonitor = NWPathMonitor()
 
     static var defaultDirectory: URL {
         FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -25,6 +28,26 @@ final class NotetakerController: ObservableObject {
         // A meeting left "recording" or "transcribing" by a crash or quit can be retried.
         for meeting in meetings where meeting.status == .recording || meeting.status == .transcribing {
             update(meeting.id) { $0.status = .failed("Interrupted before the transcript was ready.") }
+        }
+        // Retry uploads that failed for lack of network as soon as a connection is available
+        // (the first update arrives right away, which also covers the app launching online).
+        pathMonitor.pathUpdateHandler = { [weak self] path in
+            guard path.status == .satisfied else { return }
+            DispatchQueue.main.async { self?.retryMeetingsWaitingForNetwork() }
+        }
+        pathMonitor.start(queue: DispatchQueue(label: "susurramelo.network"))
+    }
+
+    deinit {
+        pathMonitor.cancel()
+    }
+
+    private func retryMeetingsWaitingForNetwork() {
+        for meeting in meetings where meeting.waitingForNetwork == true {
+            if case .failed = meeting.status {
+                Log.dictation.info("Network is back; retrying a meeting transcription")
+                transcribe(meeting.id)
+            }
         }
     }
 
@@ -68,22 +91,39 @@ final class NotetakerController: ObservableObject {
     // MARK: Transcription
 
     /// Mixes the recording, uploads it with speaker separation and stores the transcript.
+    /// Network errors, rate limits and server errors are retried with increasing waits; if the
+    /// failure was for lack of network, the meeting is retried again when the connection returns.
     func transcribe(_ id: UUID) {
-        update(id) { $0.status = .transcribing }
+        if let meeting = meetings.first(where: { $0.id == id }), meeting.status == .transcribing { return }
+        update(id) {
+            $0.status = .transcribing
+            $0.waitingForNetwork = nil
+        }
         let folder = store.folder(for: id)
         let language = preferences.languageCode.isEmpty ? nil : preferences.languageCode
         let keyterms = dictionary.dictionary.keyterms
+        let policy = retryPolicy
         Task.detached(priority: .userInitiated) { [weak self] in
-            let result: Result<MeetingPipeline.Result, Error>
-            do {
-                result = .success(try await MeetingPipeline.run(folder: folder, languageCode: language, keyterms: keyterms))
-            } catch {
-                result = .failure(error)
+            var attempt = 0
+            var result: Result<MeetingPipeline.Result, Error>
+            while true {
+                attempt += 1
+                do {
+                    result = .success(try await MeetingPipeline.run(folder: folder, languageCode: language, keyterms: keyterms))
+                    break
+                } catch {
+                    result = .failure(error)
+                    let failure = MeetingPipeline.classify(error)
+                    guard RetryPolicy.isRetryable(failure), let delay = policy.delay(afterAttempt: attempt) else { break }
+                    Log.dictation.info("Meeting upload failed (attempt \(attempt)); retrying in \(Int(delay)) s")
+                    try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                }
             }
             let owner = self
+            let finalResult = result
             await MainActor.run {
                 guard let self = owner else { return }
-                switch result {
+                switch finalResult {
                 case let .success(output):
                     self.update(id) {
                         $0.turns = output.turns
@@ -94,7 +134,13 @@ final class NotetakerController: ObservableObject {
                     }
                 case let .failure(error):
                     Log.dictation.error("Meeting transcription failed: \(error.localizedDescription, privacy: .public)")
-                    self.update(id) { $0.status = .failed(error.localizedDescription) }
+                    let waits = RetryPolicy.waitsForNetwork(MeetingPipeline.classify(error))
+                    self.update(id) {
+                        $0.status = .failed(waits
+                            ? "No internet connection — will retry automatically when you're back online."
+                            : error.localizedDescription)
+                        $0.waitingForNetwork = waits ? true : nil
+                    }
                 }
             }
         }
@@ -135,6 +181,13 @@ enum MeetingPipeline {
         let duration: TimeInterval
         let meSpeakerID: String?
         let languageCode: String?
+    }
+
+    /// Maps an upload error to the retry policy's categories.
+    static func classify(_ error: Error) -> UploadFailure {
+        if error is URLError { return .offline }
+        if case let BatchTranscriber.BatchError.http(status, _) = error { return .http(status) }
+        return .other
     }
 
     enum PipelineError: LocalizedError {
