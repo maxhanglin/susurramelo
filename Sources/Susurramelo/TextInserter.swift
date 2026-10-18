@@ -9,10 +9,15 @@ enum TextInserter {
 
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
+        // Tell clipboard managers not to record the transcript.
+        pasteboard.setString("", forType: NSPasteboard.PasteboardType("org.nspasteboard.TransientType"))
+        let ourChange = pasteboard.changeCount
         pressCommandV()
 
         // Give the target app time to read the pasteboard before restoring it.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            // The user copied something new in the meantime: keep it.
+            guard pasteboard.changeCount == ourChange else { return }
             pasteboard.clearContents()
             if !saved.isEmpty { pasteboard.writeObjects(saved) }
         }

@@ -51,6 +51,10 @@ import Testing
                 == .serverError(type: "auth_error", message: "Invalid API key")
         )
         #expect(
+            ScribeProtocol.decodeEvent(#"{"message_type":"unaccepted_terms","error":"Accept the terms"}"#)
+                == .serverError(type: "unaccepted_terms", message: "Accept the terms")
+        )
+        #expect(
             ScribeProtocol.decodeEvent(#"{"message_type":"insufficient_audio_activity"}"#)
                 == .serverError(type: "insufficient_audio_activity", message: nil)
         )

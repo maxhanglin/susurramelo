@@ -26,6 +26,10 @@ final class ScribeClient {
         task = URLSession.shared.webSocketTask(with: request)
     }
 
+    deinit {
+        task.cancel(with: .normalClosure, reason: nil)
+    }
+
     func connect() {
         task.resume()
         receive()

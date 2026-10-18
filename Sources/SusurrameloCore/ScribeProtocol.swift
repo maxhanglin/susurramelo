@@ -19,7 +19,7 @@ public enum ScribeProtocol {
     /// Message types the server uses to report failures.
     static let errorTypes: Set<String> = [
         "error", "auth_error", "quota_exceeded", "commit_throttled", "transcriber_error",
-        "unaccepted_terms_error", "rate_limited", "input_error", "invalid_request",
+        "unaccepted_terms", "rate_limited", "input_error", "invalid_request",
         "queue_overflow", "resource_exhausted", "session_time_limit_exceeded",
         "chunk_size_exceeded", "insufficient_audio_activity",
     ]

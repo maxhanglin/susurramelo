@@ -30,6 +30,8 @@ final class DictationController {
     }
 
     private func apply(_ input: PushToTalk.Input) {
+        // One session at a time: ignore new presses until the previous transcript is pasted.
+        if case .keyDown = input, status == .transcribing { return }
         switch pushToTalk.handle(input) {
         case .startRecording: beginRecording()
         case .stopAndCommit: commitRecording()
@@ -65,7 +67,8 @@ final class DictationController {
         self.capture = nil
         status = .transcribing
         client.commit(trailingAudio: Data()) { [weak self] outcome in
-            guard let self else { return }
+            // Ignore completions from a session that is no longer current.
+            guard let self, self.client === client else { return }
             self.client = nil
             switch outcome {
             case let .transcript(text):

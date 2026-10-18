@@ -5,18 +5,20 @@ import AppKit
 final class HotkeyMonitor {
     /// Right Option. Left Option is 58; Right Command is 54.
     static let rightOptionKeyCode: UInt16 = 61
+    /// Device-specific flag for Right Option (`NX_DEVICERALTKEYMASK`), so Left Option does not mask a release.
+    static let rightOptionDeviceMask: UInt = 0x40
 
     private let keyCode: UInt16
-    private let flag: NSEvent.ModifierFlags
+    private let deviceMask: UInt
     private var monitors: [Any] = []
     private var isDown = false
 
     var onPress: (() -> Void)?
     var onRelease: (() -> Void)?
 
-    init(keyCode: UInt16 = HotkeyMonitor.rightOptionKeyCode, flag: NSEvent.ModifierFlags = .option) {
+    init(keyCode: UInt16 = HotkeyMonitor.rightOptionKeyCode, deviceMask: UInt = HotkeyMonitor.rightOptionDeviceMask) {
         self.keyCode = keyCode
-        self.flag = flag
+        self.deviceMask = deviceMask
     }
 
     func start() {
@@ -40,7 +42,7 @@ final class HotkeyMonitor {
 
     private func handle(_ event: NSEvent) {
         guard event.keyCode == keyCode else { return }
-        let pressed = event.modifierFlags.contains(flag)
+        let pressed = event.modifierFlags.rawValue & deviceMask != 0
         guard pressed != isDown else { return }
         isDown = pressed
         pressed ? onPress?() : onRelease?()
