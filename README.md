@@ -7,7 +7,8 @@ Native macOS menu-bar dictation: hold **Right Option**, speak, release — the t
 Requires macOS 14+ and the Swift 6 toolchain (Xcode Command Line Tools are enough).
 
 ```bash
-scripts/build-app.sh   # produces dist/Susurramelo.app
+scripts/create-signing-identity.sh   # once per Mac: stable local signing identity
+scripts/build-app.sh                 # produces dist/Susurramelo.app
 swift test             # unit tests for the core logic
 ```
 
@@ -16,7 +17,16 @@ swift test             # unit tests for the core logic
 1. `open dist/Susurramelo.app` — a mic icon appears in the menu bar.
 2. Paste your ElevenLabs API key when asked (stored in the Keychain; change it later from the menu).
 3. Allow **Microphone** access.
-4. Allow **Accessibility** in System Settings → Privacy & Security → Accessibility. It is needed to detect the key globally and to paste. After a rebuild you may need to remove and re-add the app there (ad-hoc signature).
+4. Allow **Accessibility** in System Settings → Privacy & Security → Accessibility. It is needed to paste into other apps.
+
+The build is signed with a stable local identity, so these permissions are asked once and survive rebuilds. Without it (ad-hoc fallback), macOS treats every build as a new app and asks again.
+
+## Troubleshooting
+
+```bash
+/usr/bin/log show --last 5m --info --predicate 'subsystem == "com.susurramelo.app"'
+dist/Susurramelo.app/Contents/MacOS/Susurramelo --self-test /path/to/16k-mono.wav
+```
 
 ## How it works
 

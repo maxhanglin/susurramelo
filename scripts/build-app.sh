@@ -31,7 +31,14 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 
-# Ad-hoc signature: macOS ties Accessibility/Microphone grants to it, so each rebuild may
-# require re-granting Accessibility (remove and re-add the app in System Settings).
-codesign --force --sign - --identifier com.susurramelo.app "$APP"
+# macOS ties Keychain access and privacy grants (Accessibility, Microphone) to the code signature.
+# A stable identity keeps those grants across rebuilds; ad-hoc signing resets them every build.
+# Create the identity once with scripts/create-signing-identity.sh.
+IDENTITY="${SIGN_IDENTITY:-Susurramelo Local Signing}"
+if security find-certificate -c "$IDENTITY" >/dev/null 2>&1; then
+    codesign --force --sign "$IDENTITY" --identifier com.susurramelo.app "$APP"
+else
+    echo "warning: signing identity '$IDENTITY' not found; using ad-hoc signature (permissions reset on every build)" >&2
+    codesign --force --sign - --identifier com.susurramelo.app "$APP"
+fi
 echo "Built $APP"
