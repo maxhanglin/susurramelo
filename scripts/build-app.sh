@@ -4,7 +4,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 APP="dist/Susurramelo.app"
-VERSION="0.1.0"
+VERSION="0.2.0"
 
 swift build -c release
 BIN="$(swift build -c release --show-bin-path)/Susurramelo"
@@ -26,9 +26,10 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>CFBundleShortVersionString</key><string>${VERSION}</string>
     <key>CFBundleVersion</key><string>${VERSION}</string>
-    <key>LSMinimumSystemVersion</key><string>14.0</string>
+    <key>LSMinimumSystemVersion</key><string>14.2</string>
     <key>LSUIElement</key><true/>
     <key>NSMicrophoneUsageDescription</key><string>Susurramelo records your voice while you hold the dictation key and sends it to ElevenLabs for transcription.</string>
+    <key>NSAudioCaptureUsageDescription</key><string>Susurramelo records the audio of your meetings (what the other participants say) only while you are recording a meeting.</string>
 </dict>
 </plist>
 PLIST

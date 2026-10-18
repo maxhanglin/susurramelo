@@ -1,6 +1,10 @@
 import AppKit
 
 SelfTest.runIfRequested()
+UsageReport.runIfRequested()
+BatchTest.runIfRequested()
+MeetingPipelineTest.runIfRequested()
+WriterTest.runIfRequested()
 Snapshot.runIfRequested()
 
 let app = NSApplication.shared

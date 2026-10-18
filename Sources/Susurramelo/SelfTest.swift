@@ -2,7 +2,7 @@ import Foundation
 import SusurrameloCore
 
 /// `Susurramelo --self-test <file.wav>` streams a 16 kHz mono 16-bit WAV through the same
-/// Scribe client used for dictation and prints the outcome. It uses the Keychain API key and
+/// Scribe client used for dictation and prints the outcome. It uses the saved API key and
 /// never prints it. Create a test file with:
 /// `say -o /tmp/t.aiff "Hola, esto es una prueba" && afconvert -f WAVE -d LEI16@16000 -c 1 /tmp/t.aiff /tmp/t.wav`
 enum SelfTest {
@@ -13,7 +13,7 @@ enum SelfTest {
         guard let wav = FileManager.default.contents(atPath: args[index + 1]), let pcm = pcmData(fromWAV: wav) else {
             fail("could not read PCM data from \(args[index + 1])")
         }
-        guard let apiKey = KeychainStore.load(), !apiKey.isEmpty else { fail("no API key in the Keychain") }
+        guard let apiKey = APIKeyStore.load(), !apiKey.isEmpty else { fail("no API key saved") }
 
         print("Streaming \(pcm.count) bytes (\(Double(pcm.count) / 2 / Double(PCM.sampleRate)) s)…")
         // Optional: --keyterms "Word1,Word2" to check the server accepts them.

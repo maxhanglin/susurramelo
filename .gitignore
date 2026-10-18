@@ -5,3 +5,10 @@ dist/
 .swiftpm/
 .codegraph/
 .atl/
+
+# Secrets (safety net; the app stores its API key outside the repo)
+.env
+.env.*
+*.pem
+*.key
+*.p12

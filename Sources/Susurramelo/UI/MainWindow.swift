@@ -26,7 +26,7 @@ enum Page: String, CaseIterable, Identifiable {
         }
     }
 
-    var isUpcoming: Bool { self == .insights || self == .notetaker }
+    var isUpcoming: Bool { self == .insights }
 }
 
 /// Owns the main window. The app is a menu-bar app; while this window is open it also shows in the Dock.
@@ -75,8 +75,11 @@ struct MainView: View {
     @ObservedObject var history: HistoryController
     @ObservedObject var preferences: Preferences
     @ObservedObject var dictionary: DictionaryController
+    @ObservedObject var notetaker: NotetakerController
     let onChangeAPIKey: () -> Void
     @State var page: Page = .home
+    /// Opens a meeting directly (snapshots).
+    var openMeeting: UUID?
 
     var body: some View {
         HStack(spacing: 0) {
@@ -101,7 +104,7 @@ struct MainView: View {
         case .home: HomeView(history: history)
         case .dictionary: DictionaryView(dictionary: dictionary)
         case .insights: UpcomingView(page: .insights)
-        case .notetaker: UpcomingView(page: .notetaker)
+        case .notetaker: NotetakerView(notetaker: notetaker, selectedID: openMeeting)
         case .settings: SettingsView(history: history, preferences: preferences, onChangeAPIKey: onChangeAPIKey)
         }
     }

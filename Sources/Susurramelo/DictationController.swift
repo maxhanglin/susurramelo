@@ -85,7 +85,7 @@ final class DictationController {
     }
 
     private func beginRecording() {
-        guard let apiKey = KeychainStore.load(), !apiKey.isEmpty else {
+        guard let apiKey = APIKeyStore.load(), !apiKey.isEmpty else {
             status = .error("Set your ElevenLabs API key first")
             return
         }

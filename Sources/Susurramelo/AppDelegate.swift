@@ -1,6 +1,7 @@
 import AppKit
 import AVFoundation
 import Carbon.HIToolbox
+import SusurrameloCore
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
@@ -11,10 +12,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let preferences = Preferences()
     lazy var history = HistoryController(preferences: preferences)
     let dictionary = DictionaryController()
+    lazy var notetaker = NotetakerController(preferences: preferences, dictionary: dictionary)
+    private let meetingItem = NSMenuItem(title: "Record Meeting", action: #selector(toggleMeeting), keyEquivalent: "")
     private lazy var dictation = DictationController(preferences: preferences, history: history, dictionary: dictionary)
     private var pasteLastShortcut: GlobalShortcut?
     private lazy var mainWindow = MainWindowController { [unowned self] in
-        MainView(history: self.history, preferences: self.preferences, dictionary: self.dictionary, onChangeAPIKey: { [unowned self] in self.setAPIKey() })
+        MainView(history: self.history, preferences: self.preferences, dictionary: self.dictionary, notetaker: self.notetaker, onChangeAPIKey: { [unowned self] in self.setAPIKey() })
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -31,7 +34,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.dictation.pasteLast()
         }
 
-        if KeychainStore.load() == nil { setAPIKey() }
+        if APIKeyStore.load() == nil { setAPIKey() }
     }
 
     /// Menu-bar apps have no main menu, so Cmd+V/C/X/A never reach text fields (e.g. the API key alert).
@@ -58,6 +61,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let openItem = NSMenuItem(title: "Open Susurramelo…", action: #selector(openMainWindow), keyEquivalent: "o")
         openItem.target = self
         menu.addItem(openItem)
+        meetingItem.target = self
+        menu.addItem(meetingItem)
         menu.addItem(.separator())
         pasteLastItem.target = self
         pasteLastItem.keyEquivalent = "v"
@@ -92,6 +97,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         _ = AXIsProcessTrustedWithOptions(options)
     }
 
+    @objc private func toggleMeeting() {
+        if notetaker.isRecording {
+            notetaker.stopRecording()
+        } else {
+            do { try notetaker.startRecording() } catch { render(.error("Could not record meeting: \(error.localizedDescription)")) }
+        }
+    }
+
     @objc private func openMainWindow() {
         mainWindow.show()
     }
@@ -109,7 +122,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func setAPIKey() {
         let alert = NSAlert()
         alert.messageText = "ElevenLabs API Key"
-        alert.informativeText = "Stored in your macOS Keychain. Create one at elevenlabs.io → Developers → API Keys."
+        alert.informativeText = "Saved on this Mac, readable only by your user. Create one at elevenlabs.io → Developers → API Keys."
         let field = NSSecureTextField(frame: NSRect(x: 0, y: 0, width: 300, height: 24))
         alert.accessoryView = field
         alert.addButton(withTitle: "Save")
@@ -119,7 +132,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard alert.runModal() == .alertFirstButtonReturn else { return }
         let key = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !key.isEmpty else { return }
-        if !KeychainStore.save(key) { render(.error("Could not save the API key to the Keychain")) }
+        if !APIKeyStore.save(key) { render(.error("Could not save the API key")) }
         else { render(.idle) }
     }
 }
@@ -127,6 +140,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 extension AppDelegate: NSMenuDelegate {
     func menuWillOpen(_ menu: NSMenu) {
         accessibilityItem.isHidden = AXIsProcessTrusted()
+        if notetaker.isRecording, let started = notetaker.recordingStartedAt {
+            meetingItem.title = "Stop Meeting Recording (\(Meeting.clock(Date().timeIntervalSince(started))))"
+        } else {
+            meetingItem.title = "Record Meeting"
+        }
         let last = history.history.last
         pasteLastItem.isEnabled = last != nil
         lastPreviewItem.title = last.map { "   “" + Self.preview($0.text) + "”" } ?? "   No dictations yet"

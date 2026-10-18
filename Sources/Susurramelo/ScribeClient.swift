@@ -11,7 +11,9 @@ final class ScribeClient {
 
     private let task: URLSessionWebSocketTask
     private let queue = DispatchQueue(label: "susurramelo.scribe")
-    private var lastPartial = ""
+    private var transcript = TranscriptAssembler()
+    /// Bumped on every committed segment after our commit; only the latest scheduled finish runs.
+    private var finishGeneration = 0
     private var committed = false
     private var finished = false
     private var completion: ((Outcome) -> Void)?
@@ -70,7 +72,8 @@ final class ScribeClient {
         queue.asyncAfter(deadline: .now() + timeout) { [weak self] in
             guard let self else { return }
             // Fall back to the last partial rather than losing what the user said.
-            self.finish(self.lastPartial.isEmpty ? .failure("Timed out waiting for transcript") : .transcript(self.lastPartial))
+            let text = self.transcript.bestEffortText
+            self.finish(text.isEmpty ? .failure("Timed out waiting for transcript") : .transcript(text))
         }
     }
 
@@ -102,16 +105,24 @@ final class ScribeClient {
     }
 
     private func handle(_ event: ScribeProtocol.Event) {
-        Log.scribe.info("Event: \(String(describing: event), privacy: .private)")
+        Log.scribe.info("Event: \(Self.kind(of: event), privacy: .public)")
         switch event {
         case let .partialTranscript(text):
-            queue.async { self.lastPartial = text }
+            queue.async { self.transcript.partial(text) }
             DispatchQueue.main.async { self.onPartial?(text) }
         case let .committedTranscript(text):
             queue.async {
-                // Committed segments before our commit (none with manual strategy) are ignored.
+                // The server can commit segments on its own during long recordings; keep them all.
+                self.transcript.committed(text)
+                // The segment that arrives after our commit closes the dictation.
                 guard self.committed else { return }
-                self.finish(.transcript(text))
+                // A server-side segment can race with ours; wait briefly in case another one follows.
+                self.finishGeneration += 1
+                let generation = self.finishGeneration
+                self.queue.asyncAfter(deadline: .now() + 0.15) {
+                    guard generation == self.finishGeneration else { return }
+                    self.finish(.transcript(self.transcript.committedText))
+                }
             }
         case let .serverError(type, message):
             finish(.failure([type, message].compactMap { $0 }.joined(separator: ": ")))
@@ -119,6 +130,17 @@ final class ScribeClient {
             Log.scribe.info("Ignored message type \(type, privacy: .public)")
         case .sessionStarted, .undecodable:
             break
+        }
+    }
+
+    private static func kind(of event: ScribeProtocol.Event) -> String {
+        switch event {
+        case .sessionStarted: "session_started"
+        case .partialTranscript: "partial_transcript"
+        case .committedTranscript: "committed_transcript"
+        case let .serverError(type, _): "error:\(type)"
+        case let .ignored(type): "ignored:\(type)"
+        case .undecodable: "undecodable"
         }
     }
 
