@@ -1,11 +1,11 @@
 import Foundation
 
 /// `Susurramelo --usage` prints the ElevenLabs subscription's credit usage for the current period,
-/// using the Keychain API key (never printed).
+/// using the saved API key (never printed).
 enum UsageReport {
     static func runIfRequested() {
         guard CommandLine.arguments.contains("--usage") else { return }
-        guard let apiKey = KeychainStore.load(), !apiKey.isEmpty else { fail("no API key in the Keychain") }
+        guard let apiKey = APIKeyStore.load(), !apiKey.isEmpty else { fail("no API key saved") }
 
         var request = URLRequest(url: URL(string: "https://api.elevenlabs.io/v1/user/subscription")!)
         request.setValue(apiKey, forHTTPHeaderField: "xi-api-key")

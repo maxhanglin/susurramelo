@@ -144,7 +144,7 @@ enum MeetingPipeline {
     }
 
     static func run(folder: URL, languageCode: String?, keyterms: [String]) async throws -> Result {
-        guard let apiKey = KeychainStore.load(), !apiKey.isEmpty else { throw PipelineError.missingAPIKey }
+        guard let apiKey = APIKeyStore.load(), !apiKey.isEmpty else { throw PipelineError.missingAPIKey }
         let audioURL = folder.appendingPathComponent("audio.m4a")
         let energyURL = folder.appendingPathComponent("energy.json")
 

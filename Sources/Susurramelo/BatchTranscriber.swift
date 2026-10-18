@@ -78,7 +78,7 @@ struct BatchTranscriber {
 }
 
 /// `Susurramelo --batch-test <file> <mode> <out.json>` with mode `diarize`, `multichannel` or `both`.
-/// Development aid for comparing transcription modes; uses the Keychain API key (never printed).
+/// Development aid for comparing transcription modes; uses the saved API key (never printed).
 enum BatchTest {
     static func runIfRequested() {
         let args = CommandLine.arguments
@@ -86,7 +86,7 @@ enum BatchTest {
         let file = URL(fileURLWithPath: args[index + 1])
         let mode = args[index + 2]
         let out = URL(fileURLWithPath: args[index + 3])
-        guard let apiKey = KeychainStore.load() else { print("no API key"); exit(1) }
+        guard let apiKey = APIKeyStore.load() else { print("no API key"); exit(1) }
         var options = BatchTranscriber.Options()
         options.diarize = mode != "multichannel"
         options.multiChannel = mode != "diarize"

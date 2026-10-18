@@ -34,7 +34,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.dictation.pasteLast()
         }
 
-        if KeychainStore.load() == nil { setAPIKey() }
+        if APIKeyStore.load() == nil { setAPIKey() }
     }
 
     /// Menu-bar apps have no main menu, so Cmd+V/C/X/A never reach text fields (e.g. the API key alert).
@@ -122,7 +122,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func setAPIKey() {
         let alert = NSAlert()
         alert.messageText = "ElevenLabs API Key"
-        alert.informativeText = "Stored in your macOS Keychain. Create one at elevenlabs.io → Developers → API Keys."
+        alert.informativeText = "Saved on this Mac, readable only by your user. Create one at elevenlabs.io → Developers → API Keys."
         let field = NSSecureTextField(frame: NSRect(x: 0, y: 0, width: 300, height: 24))
         alert.accessoryView = field
         alert.addButton(withTitle: "Save")
@@ -132,7 +132,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard alert.runModal() == .alertFirstButtonReturn else { return }
         let key = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !key.isEmpty else { return }
-        if !KeychainStore.save(key) { render(.error("Could not save the API key to the Keychain")) }
+        if !APIKeyStore.save(key) { render(.error("Could not save the API key")) }
         else { render(.idle) }
     }
 }

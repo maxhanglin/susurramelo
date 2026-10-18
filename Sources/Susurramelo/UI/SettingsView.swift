@@ -8,7 +8,7 @@ struct SettingsView: View {
     @ObservedObject var preferences: Preferences
     let onChangeAPIKey: () -> Void
 
-    @State private var hasAPIKey = KeychainStore.load() != nil
+    @State private var hasAPIKey = APIKeyStore.load() != nil
     @State private var micStatus = AVCaptureDevice.authorizationStatus(for: .audio)
     @State private var accessibilityTrusted = AXIsProcessTrusted()
     @State private var confirmClear = false
@@ -24,10 +24,10 @@ struct SettingsView: View {
                 Text("Settings").font(Theme.pageTitle).foregroundStyle(Theme.ink)
 
                 group("Account") {
-                    row("ElevenLabs API key", detail: hasAPIKey ? "Saved in your Keychain" : "Not set — dictation is disabled") {
+                    row("ElevenLabs API key", detail: hasAPIKey ? "Saved on this Mac — only your user can read it" : "Not set — dictation is disabled") {
                         Button(hasAPIKey ? "Change…" : "Add key…") {
                             onChangeAPIKey()
-                            hasAPIKey = KeychainStore.load() != nil
+                            hasAPIKey = APIKeyStore.load() != nil
                         }
                         .buttonStyle(PillButtonStyle(kind: hasAPIKey ? .secondary : .primary))
                     }
@@ -113,7 +113,7 @@ struct SettingsView: View {
     private func refreshPermissions() {
         micStatus = AVCaptureDevice.authorizationStatus(for: .audio)
         accessibilityTrusted = AXIsProcessTrusted()
-        hasAPIKey = KeychainStore.load() != nil
+        hasAPIKey = APIKeyStore.load() != nil
     }
 
     private var divider: some View { Divider().overlay(Theme.border) }

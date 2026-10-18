@@ -15,7 +15,7 @@ swift test             # unit tests for the core logic
 ## First run
 
 1. `open dist/Susurramelo.app` — a mic icon appears in the menu bar.
-2. Paste your ElevenLabs API key when asked (stored in the Keychain; change it later from the menu).
+2. Paste your ElevenLabs API key when asked (saved on this Mac in a file only your user can read, excluded from backups; change it later from the menu or Settings).
 3. Allow **Microphone** access.
 4. Allow **Accessibility** in System Settings → Privacy & Security → Accessibility. It is needed to paste into other apps.
 
