@@ -1,6 +1,7 @@
 import AppKit
 
 SelfTest.runIfRequested()
+UsageReport.runIfRequested()
 Snapshot.runIfRequested()
 
 let app = NSApplication.shared
