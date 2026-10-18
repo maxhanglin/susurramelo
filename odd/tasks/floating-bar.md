@@ -19,8 +19,8 @@ Branch: `feat/floating-bar` (from `feat/dictation-mvp`) · Delivery: `ask-on-ris
 |----|-------|-------|--------|----------|
 | T1 | S5, S6, S7 | inline | done | 9b69bab — RED: types missing; GREEN 33/33 (DictationGestureTests 15) |
 | T2 | S3 | inline | done | 9b69bab — AudioLevelTests 5/5 |
-| T3 | S2, S3, S4 | inline | done (build only) | f4636cc — compiles; visuals unverified |
-| T4 | S2–S7 | inline | pending | f4636cc wired, app rebuilt (stable signature) and relaunched; awaiting manual check by user |
+| T3 | S2, S3, S4 | inline | done | f4636cc — confirmed visually by user |
+| T4 | S2–S7 | inline | done | user e2e 2026-10-18: logs show 7 recordings, 4 hands-free, 4 transcribed+pasted, 3 cancelled |
 
 - T1: Core `DictationGesture` state machine replacing `PushToTalk` (hold, double-tap lock, Esc, tap timeout), test-first.
 - T2: Core `AudioLevel` (RMS → 0…1 on a dB scale) and a rolling bar history, test-first.
@@ -34,3 +34,4 @@ Route evidence: no Writer trigger (units share `DictationController`; context be
 - L1 (2026-10-18, user): "Arranquemos por la barra flotante de grabación con onda de voz, Esc para cancelar y modo manos libres."
 - L3: Known limitation: an NSEvent global monitor cannot swallow Esc, so the frontmost app also receives it. Acceptable for now; a CGEventTap could consume it later.
 - L4: RDD assess b09bd02..f4636cc: medium, under_budget (no review due yet).
+- L5 (2026-10-18, user): "Sí, ahora parece que funciona también el modo manos libres. Y el \"escape\" también funciona perfecto." All tasks done.
