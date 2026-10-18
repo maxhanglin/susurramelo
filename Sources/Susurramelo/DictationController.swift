@@ -20,7 +20,10 @@ final class DictationController {
     var onStatusChange: ((Status) -> Void)?
 
     private(set) var status: Status = .idle {
-        didSet { onStatusChange?(status) }
+        didSet {
+            Log.dictation.info("Status: \(String(describing: self.status), privacy: .public)")
+            onStatusChange?(status)
+        }
     }
 
     func start() {
@@ -47,7 +50,12 @@ final class DictationController {
         }
         let client = ScribeClient(apiKey: apiKey, languageCode: languageCode)
         let capture = AudioCapture()
-        capture.onChunk = { [weak client] chunk in client?.send(chunk) }
+        var bytesSent = 0
+        capture.onChunk = { [weak client] chunk in
+            bytesSent += chunk.count
+            if bytesSent == chunk.count { Log.dictation.info("First audio chunk captured (\(chunk.count) bytes)") }
+            client?.send(chunk)
+        }
         client.connect()
         do {
             try capture.start()
@@ -73,8 +81,11 @@ final class DictationController {
             switch outcome {
             case let .transcript(text):
                 let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-                if !trimmed.isEmpty { TextInserter.insert(trimmed) }
-                self.status = .idle
+                if !trimmed.isEmpty, TextInserter.insert(trimmed) == .copiedOnly {
+                    self.status = .error("Accessibility permission missing — text copied, press Cmd+V")
+                } else {
+                    self.status = .idle
+                }
             case let .failure(message):
                 self.status = .error(message)
             }

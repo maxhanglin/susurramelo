@@ -41,6 +41,16 @@ public enum ScribeProtocol {
         return components.url!
     }
 
+    /// The server rejects a commit with less than 0.3 s of uncommitted audio (`commit_throttled`).
+    /// Returns how many bytes of silence to send with the commit: enough to reach 0.3 s, at least 0.1 s.
+    public static func commitPaddingBytes(uncommittedBytes: Int) -> Int {
+        let bytesPerSecond = PCM.sampleRate * 2
+        let minimumCommit = bytesPerSecond * 3 / 10
+        let minimumPadding = bytesPerSecond / 10
+        let padding = max(minimumPadding, minimumCommit - uncommittedBytes)
+        return padding + padding % 2
+    }
+
     public static func audioChunkMessage(_ audio: Data, commit: Bool, sampleRate: Int) throws -> String {
         let payload = AudioChunk(audioBase64: audio.base64EncodedString(), commit: commit, sampleRate: sampleRate)
         let data = try JSONEncoder().encode(payload)

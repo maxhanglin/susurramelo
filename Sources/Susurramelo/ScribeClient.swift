@@ -16,6 +16,8 @@ final class ScribeClient {
     private var finished = false
     private var completion: ((Outcome) -> Void)?
     private var earlyOutcome: Outcome?
+    private let sentLock = NSLock()
+    private var uncommittedBytes = 0
 
     /// Delivered on the main queue.
     var onPartial: ((String) -> Void)?
@@ -31,6 +33,7 @@ final class ScribeClient {
     }
 
     func connect() {
+        Log.scribe.info("Connecting to Scribe realtime")
         task.resume()
         receive()
     }
@@ -38,8 +41,13 @@ final class ScribeClient {
     /// Thread-safe; called from the audio thread.
     func send(_ audio: Data, commit: Bool = false) {
         guard let message = try? ScribeProtocol.audioChunkMessage(audio, commit: commit, sampleRate: PCM.sampleRate) else { return }
+        sentLock.lock(); uncommittedBytes = commit ? 0 : uncommittedBytes + audio.count; sentLock.unlock()
+        if commit { Log.scribe.info("Sending commit chunk (\(audio.count) bytes)") }
         task.send(.string(message)) { [weak self] error in
-            if let error { self?.finish(.failure("Send failed: \(error.localizedDescription)")) }
+            if let error {
+                Log.scribe.error("Send failed: \(error.localizedDescription, privacy: .public)")
+                self?.finish(.failure("Send failed: \(error.localizedDescription)"))
+            }
         }
     }
 
@@ -54,8 +62,9 @@ final class ScribeClient {
             }
             self.completion = completion
             self.committed = true
-            // Always send something with the commit flag; 100 ms of silence if nothing is pending.
-            let audio = trailingAudio.isEmpty ? Data(count: PCM.sampleRate / 10 * 2) : trailingAudio
+            // Pad with silence so the server always has the 0.3 s minimum it requires to commit.
+            self.sentLock.lock(); let pending = self.uncommittedBytes + trailingAudio.count; self.sentLock.unlock()
+            let audio = trailingAudio + Data(count: ScribeProtocol.commitPaddingBytes(uncommittedBytes: pending))
             self.send(audio, commit: true)
         }
         queue.asyncAfter(deadline: .now() + timeout) { [weak self] in
@@ -84,6 +93,7 @@ final class ScribeClient {
                 self.handle(ScribeProtocol.decodeEvent(String(decoding: data, as: UTF8.self)))
                 self.receive()
             case let .failure(error):
+                Log.scribe.error("Receive failed: \(error.localizedDescription, privacy: .public) close=\(self.task.closeCode.rawValue) reason=\(String(decoding: self.task.closeReason ?? Data(), as: UTF8.self), privacy: .public)")
                 self.finish(.failure("Connection closed: \(error.localizedDescription)"))
             @unknown default:
                 self.receive()
@@ -92,6 +102,7 @@ final class ScribeClient {
     }
 
     private func handle(_ event: ScribeProtocol.Event) {
+        Log.scribe.info("Event: \(String(describing: event), privacy: .private)")
         switch event {
         case let .partialTranscript(text):
             queue.async { self.lastPartial = text }
@@ -104,7 +115,9 @@ final class ScribeClient {
             }
         case let .serverError(type, message):
             finish(.failure([type, message].compactMap { $0 }.joined(separator: ": ")))
-        case .sessionStarted, .ignored, .undecodable:
+        case let .ignored(type):
+            Log.scribe.info("Ignored message type \(type, privacy: .public)")
+        case .sessionStarted, .undecodable:
             break
         }
     }
@@ -113,6 +126,10 @@ final class ScribeClient {
         queue.async {
             guard !self.finished else { return }
             self.finished = true
+            switch outcome {
+            case let .transcript(text): Log.scribe.info("Finished with transcript (\(text.count) chars)")
+            case let .failure(message): Log.scribe.error("Finished with failure: \(message, privacy: .public)")
+            }
             let completion = self.completion
             self.completion = nil
             if completion == nil { self.earlyOutcome = outcome }

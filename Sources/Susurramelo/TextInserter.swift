@@ -3,8 +3,22 @@ import Carbon.HIToolbox
 
 /// Inserts text into the focused app by pasting it, then restores the user's clipboard.
 enum TextInserter {
-    static func insert(_ text: String) {
+    enum Result {
+        case pasted
+        /// Accessibility is not granted, so Cmd+V cannot be simulated; the text is left on the clipboard.
+        case copiedOnly
+    }
+
+    @discardableResult
+    static func insert(_ text: String) -> Result {
+        let trusted = AXIsProcessTrusted()
+        Log.insert.info("Pasting \(text.count) chars; accessibility trusted=\(trusted)")
         let pasteboard = NSPasteboard.general
+        guard trusted else {
+            pasteboard.clearContents()
+            pasteboard.setString(text, forType: .string)
+            return .copiedOnly
+        }
         let saved = snapshot(pasteboard)
 
         pasteboard.clearContents()
@@ -21,6 +35,7 @@ enum TextInserter {
             pasteboard.clearContents()
             if !saved.isEmpty { pasteboard.writeObjects(saved) }
         }
+        return .pasted
     }
 
     private static func snapshot(_ pasteboard: NSPasteboard) -> [NSPasteboardItem] {

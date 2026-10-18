@@ -35,6 +35,17 @@ import Testing
         #expect(object.count == 4)
     }
 
+    @Test func commitPaddingReachesServerMinimumOfThreeHundredMilliseconds() {
+        // 16 kHz × 2 bytes: 0.1 s = 3200 bytes, 0.3 s = 9600 bytes.
+        #expect(ScribeProtocol.commitPaddingBytes(uncommittedBytes: 0) == 9600)
+        #expect(ScribeProtocol.commitPaddingBytes(uncommittedBytes: 2720) == 6880)
+    }
+
+    @Test func commitPaddingIsAtLeastOneHundredMillisecondsAndEven() {
+        #expect(ScribeProtocol.commitPaddingBytes(uncommittedBytes: 64_000) == 3200)
+        #expect(ScribeProtocol.commitPaddingBytes(uncommittedBytes: 9599) % 2 == 0)
+    }
+
     @Test func decodesSessionStarted() {
         let event = ScribeProtocol.decodeEvent(#"{"message_type":"session_started","session_id":"abc","config":{}}"#)
         #expect(event == .sessionStarted(sessionID: "abc"))
