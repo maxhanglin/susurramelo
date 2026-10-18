@@ -1,6 +1,7 @@
 import AppKit
 
 SelfTest.runIfRequested()
+Snapshot.runIfRequested()
 
 let app = NSApplication.shared
 let delegate = AppDelegate()

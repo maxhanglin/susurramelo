@@ -12,6 +12,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     lazy var history = HistoryController(preferences: preferences)
     private lazy var dictation = DictationController(preferences: preferences, history: history)
     private var pasteLastShortcut: GlobalShortcut?
+    private lazy var mainWindow = MainWindowController { [unowned self] in
+        MainView(history: self.history, preferences: self.preferences, onChangeAPIKey: { [unowned self] in self.setAPIKey() })
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
@@ -51,6 +54,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(statusLine)
         menu.addItem(NSMenuItem(title: "Hold Right Option to dictate · double-tap for hands-free · Esc cancels", action: nil, keyEquivalent: ""))
         menu.addItem(.separator())
+        let openItem = NSMenuItem(title: "Open Susurramelo…", action: #selector(openMainWindow), keyEquivalent: "o")
+        openItem.target = self
+        menu.addItem(openItem)
+        menu.addItem(.separator())
         pasteLastItem.target = self
         pasteLastItem.keyEquivalent = "v"
         pasteLastItem.keyEquivalentModifierMask = [.command, .control]
@@ -82,6 +89,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func promptForAccessibilityIfNeeded() {
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
         _ = AXIsProcessTrustedWithOptions(options)
+    }
+
+    @objc private func openMainWindow() {
+        mainWindow.show()
     }
 
     @objc private func pasteLast() {

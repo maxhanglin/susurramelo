@@ -40,10 +40,14 @@ final class HistoryController: ObservableObject {
     private let url: URL
     private let preferences: Preferences
 
-    init(preferences: Preferences) {
+    static var defaultURL: URL {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("Susurramelo/history.json")
+    }
+
+    init(preferences: Preferences, url: URL = HistoryController.defaultURL) {
         self.preferences = preferences
-        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        url = support.appendingPathComponent("Susurramelo/history.json")
+        self.url = url
         do {
             history = try History.load(from: url)
         } catch {
