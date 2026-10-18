@@ -28,6 +28,14 @@ The build is signed with a stable local identity, so these permissions are asked
 dist/Susurramelo.app/Contents/MacOS/Susurramelo --self-test /path/to/16k-mono.wav
 ```
 
+If paste stops working after switching signing (e.g. from an ad-hoc build), macOS keeps the old grant and rejects the new signature (`Failed to match existing code requirement` in the TCC log). Quit the app, then:
+
+```bash
+tccutil reset Accessibility com.susurramelo.app
+```
+
+Relaunch, grant Accessibility again, and relaunch once more.
+
 ## How it works
 
 Hold key → `AVAudioEngine` captures the mic → 16 kHz mono Int16 PCM → streamed over WebSocket to Scribe → release sends `commit: true` → the committed transcript is pasted (Cmd+V) and your clipboard is restored.
