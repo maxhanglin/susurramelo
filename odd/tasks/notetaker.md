@@ -23,6 +23,9 @@ Branch: `feat/notetaker` (from `main`) · Delivery: `ask-on-risk` · Test runner
 | T4 | S2, S3 | inline | partial | recorder written (mic AAC + Core Audio process tap); post-processing verified with --meeting-test on simulated meeting (me detected, 6 turns correct); live capture untested (needs System Audio Recording permission) |
 | T5 | S2, S5, S6 | inline | pending | |
 | T6 | S1–S6 | inline | pending | |
+| T7 | S2, S3 | inline | done | d98f0fe — repro `--writer-test`: 0/48000 frames saved → fixed: 48000/48000 |
+| T8 | S4, S6 | inline | done (logic tested) | aec587a — RetryPolicy tests 5 (82/82); live offline retry not exercised |
+| T9 | — | inline | done | (this commit) — repro with fake binary: old check 'NOT detected', new check refuses; real binary passes |
 
 - T1: Spike — verify the batch API contract from the official SDK and run a live test with a 2-voice stereo file (diarize vs multichannel vs both); measure credits with `--usage`.
 - T2: Core `Meeting` model, `TranscriptTurns` builder from words, speaker naming, Markdown export, persistence (test-first).
@@ -30,6 +33,9 @@ Branch: `feat/notetaker` (from `main`) · Delivery: `ask-on-risk` · Test runner
 - T4: `MeetingRecorder`: AVAudioEngine mic + Core Audio process tap → stereo AAC file; Info.plist `NSAudioCaptureUsageDescription`.
 - T5: Notetaker UI (list, detail, rename speakers, export) + menu-bar start/stop + recording indicator.
 - T6: Rebuild, live check by the user with a real call, RDD review (new permission + uploads private audio → likely high risk).
+- T7: Fix code-review critical #1 — system-audio buffers rejected by the file writer (format mismatch), so the call audio is not saved.
+- T8: Automatic retry of the meeting upload: backoff on network errors / HTTP 429 / 5xx, and retry when the network comes back.
+- T9: Fix code-review critical #2 — `package-release.sh` personal-path check defeated by `pipefail` + `grep -q`.
 
 Route evidence: T3 and T4 are independent but each lighter than spinning a writer; parent writes inline.
 
@@ -41,3 +47,4 @@ Route evidence: T3 and T4 are independent but each lighter than spinning a write
 - L4: Design refinement: record `mic.m4a` + `system.m4a` (AAC) during the meeting; afterwards stream-mix to 16 kHz mono `audio.m4a` and store 100 ms RMS energy tracks (`energy.json`) — no large stereo file. Minimum macOS raised to 14.2 for `AudioHardwareCreateProcessTap`.
 - L5: `--meeting-test` on simulated meeting: me=speaker_0, transcript 6 turns correct with names Me / Speaker 2 / Speaker 3.
 - L6 (2026-10-18, user): "lo de la key chain..." → "dale, hacelo así, no voy a pagar una cuenta de desarrollador de apple" / "ponele un nombre en clave que nadie sepa que ahi adentro hay una api key" / "y obviamente en gitignore". Keychain "Always Allow" proved bound to each build even with the self-signed cert trusted for codeSign (fire test: 0.2.0 rebuild blocked 20 s on a prompt). API key moved to Core `APIKeyFile` (0600 file in 0700 folder, created with O_CREAT 0600, excluded from backup; tests 6) at an innocuous path; one-time migration from the legacy Keychain item, which is then deleted. Verified: migration log line, `-rw-------`, `drwx------`, backup exclusion set, `--usage` reads in 2 s with no prompt. .gitignore gains generic secret patterns (file lives outside the repo, its name intentionally not listed).
+- L7 (2026-10-18, user): code review of PR #1 (10 candidate findings). User decision: "dale vamos con los 3" — fix (1) call-audio saving, (3) automatic upload retry, and the release privacy check; explicitly NOT crash-safe recording nor dictation audio backup ("Con el 2 y el 4 directamente no avanzaría").
