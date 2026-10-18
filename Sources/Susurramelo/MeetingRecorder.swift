@@ -53,7 +53,7 @@ private func aacSettings(sampleRate: Double, channels: Int) -> [String: Any] {
 }
 
 /// Writes PCM buffers to a compressed file on a background queue so audio threads never block.
-private final class BufferedFileWriter {
+final class BufferedFileWriter {
     private let queue = DispatchQueue(label: "susurramelo.meeting-writer")
     private var file: AVAudioFile?
 
@@ -69,10 +69,30 @@ private final class BufferedFileWriter {
     /// Takes ownership of a copied buffer.
     func write(_ buffer: AVAudioPCMBuffer) {
         queue.async { [weak self] in
-            do { try self?.file?.write(from: buffer) } catch {
+            guard let self, let file = self.file else { return }
+            do {
+                // AVAudioFile only accepts buffers in its processing format (deinterleaved Float32);
+                // system-audio taps deliver interleaved buffers, so convert those first.
+                try file.write(from: self.matching(buffer, to: file.processingFormat))
+            } catch {
                 Log.dictation.error("Meeting audio write failed: \(error.localizedDescription, privacy: .public)")
             }
         }
+    }
+
+    private var converter: AVAudioConverter?
+
+    private func matching(_ buffer: AVAudioPCMBuffer, to format: AVAudioFormat) throws -> AVAudioPCMBuffer {
+        guard buffer.format != format else { return buffer }
+        if converter?.inputFormat != buffer.format {
+            converter = AVAudioConverter(from: buffer.format, to: format)
+        }
+        guard let converter, let output = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: buffer.frameLength) else {
+            throw MeetingRecorder.RecorderError.coreAudio("unsupported buffer format", -1)
+        }
+        // Same sample rate, only the channel layout differs, so a single convert call is enough.
+        try converter.convert(to: output, from: buffer)
+        return output
     }
 
     func close() {
