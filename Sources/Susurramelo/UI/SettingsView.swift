@@ -31,6 +31,8 @@ struct SettingsView: View {
                         }
                         .buttonStyle(PillButtonStyle(kind: hasAPIKey ? .secondary : .primary))
                     }
+                    divider
+                    APIKeyPermissionsNote()
                 }
 
                 group("Dictation") {
@@ -147,5 +149,39 @@ struct SettingsView: View {
                     .buttonStyle(PillButtonStyle(kind: .primary))
             }
         }
+    }
+}
+
+/// Which permissions the ElevenLabs API key needs (set per key at elevenlabs.io → Developers → API Keys).
+private struct APIKeyPermissionsNote: View {
+    private let permissions: [(name: String, level: String, purpose: String, required: Bool)] = [
+        ("Speech to Text", "Access", "Transcribes your dictations.", true),
+        ("User", "Access", "Lets Susurramelo read your credit usage.", false),
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 6) {
+                Image(systemName: "key.horizontal").foregroundStyle(Theme.inkTertiary)
+                Text("Key permissions").font(Theme.bodyMedium).foregroundStyle(Theme.ink)
+            }
+            Text("When you create or edit the key at elevenlabs.io → Developers → API Keys, enable only these. Leave everything else on “No access”.")
+                .font(Theme.caption)
+                .foregroundStyle(Theme.inkTertiary)
+                .fixedSize(horizontal: false, vertical: true)
+            ForEach(permissions, id: \.name) { permission in
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(permission.name).font(Theme.caption.weight(.semibold)).foregroundStyle(Theme.ink)
+                        .frame(width: 110, alignment: .leading)
+                    Text(permission.level).font(Theme.caption).foregroundStyle(Theme.ink)
+                        .frame(width: 60, alignment: .leading)
+                    Text(permission.purpose).font(Theme.caption).foregroundStyle(Theme.inkTertiary)
+                    Spacer()
+                    Badge(text: permission.required ? "Required" : "Optional")
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
     }
 }
