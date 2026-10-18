@@ -10,8 +10,11 @@ VERSION="$(plutil -extract CFBundleShortVersionString raw dist/Susurramelo.app/C
 ZIP="dist/Susurramelo-${VERSION}-arm64.zip"
 
 # Refuse to ship a binary that embeds local paths (e.g. /Users/<name>/...).
-if strings -a dist/Susurramelo.app/Contents/MacOS/Susurramelo | grep -q '/Users/'; then
-    echo "error: the binary contains local paths; not packaging" >&2
+# `grep -c` reads all input: with `grep -q`, an early match makes `strings` die of SIGPIPE and,
+# under pipefail, the whole check reads as "no match".
+local_paths="$(strings -a dist/Susurramelo.app/Contents/MacOS/Susurramelo | grep -c '/Users/' || true)"
+if [[ "$local_paths" -gt 0 ]]; then
+    echo "error: the binary contains $local_paths local path(s); not packaging" >&2
     exit 1
 fi
 
