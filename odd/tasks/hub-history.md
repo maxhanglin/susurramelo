@@ -18,11 +18,11 @@ Branch: `feat/hub-history` (from `feat/floating-bar`) · Delivery: `ask-on-risk`
 
 | ID | Specs | Route | Status | Evidence |
 |----|-------|-------|--------|----------|
-| T1 | S3 | inline | pending | |
-| T2 | S3, S5 | inline | pending | |
-| T3 | S2, S4, S6, S8 | inline | pending | |
-| T4 | S2, S7 | inline | pending | |
-| T5 | S1–S8 | inline | pending | |
+| T1 | S3 | inline | done | 050e271 — RED: types missing; GREEN 44/44 (HistoryTests 11) |
+| T2 | S3, S5 | inline | done (build only) | e26228e — Carbon hotkey ⌃⌘V, menu preview |
+| T3 | S2, S4, S6, S8 | inline | done | ce17d16 — verified via --snapshot renders (light/dark, all pages) |
+| T4 | S2, S7 | inline | done | ce17d16 — verified via --snapshot renders |
+| T5 | S1–S8 | inline | pending | app rebuilt (stable signature) and relaunched; awaiting user check |
 
 - T1: Core `HistoryStore` (add, delete, clear, newest-first, cap, retention purge, stats, JSON round-trip), test-first.
 - T2: Record entries after paste; Carbon global hotkey Ctrl+Cmd+V for paste last; menu item with preview.
@@ -36,3 +36,7 @@ Route evidence: style spec gathered by a read-only explorer (mapping trigger: mi
 
 - L1 (2026-10-18, user): see S1 (both messages verbatim).
 - L2: Boundary agreed in chat: replicate the look & feel and layout patterns; no copying of logo, illustrations, embedded fonts or texts.
+- L3: Style spec from explorer: warm paper palette (#F5F4F0 canvas, #FCFCFB panel, #EEEBE3 fill/border, #1A1A1A ink), 24/16 radius floating panel, 6 px nav radius with fill selection, serif stat numbers, day-grouped history with 98 pt time column and hover actions. Mapped to SF Pro + New York serif + own brand gradient (no reference fonts/assets).
+- L4: Added `--snapshot <dir>` (renders all pages light/dark with sample data in a temp file) for visual QA. Fixed: logo now a code-drawn BrandMark; sidebar 236 pt; badge shrunk so "Upcoming" fits.
+- L5: RDD assess 448ef37..ce17d16: medium, under_budget.
+- L6 (2026-10-18, user, mid-task): "investiga si elevenlabs puede reconocer diferentes voces en una grabación, nos serviría mucho para la parte de notetaking" → answered: diarization batch-only (Scribe v2 `diarize`, up to 32 speakers; multichannel option), not realtime. Saved in Engram for the notetaker feature.
