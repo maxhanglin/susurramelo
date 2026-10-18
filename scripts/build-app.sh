@@ -29,6 +29,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>LSMinimumSystemVersion</key><string>14.2</string>
     <key>LSUIElement</key><true/>
     <key>NSMicrophoneUsageDescription</key><string>Susurramelo records your voice while you hold the dictation key and sends it to ElevenLabs for transcription.</string>
+    <key>NSAudioCaptureUsageDescription</key><string>Susurramelo records the audio of your meetings (what the other participants say) only while you are recording a meeting.</string>
 </dict>
 </plist>
 PLIST

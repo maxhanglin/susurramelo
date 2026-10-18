@@ -1,6 +1,7 @@
 import AppKit
 import AVFoundation
 import Carbon.HIToolbox
+import SusurrameloCore
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
@@ -11,10 +12,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let preferences = Preferences()
     lazy var history = HistoryController(preferences: preferences)
     let dictionary = DictionaryController()
+    lazy var notetaker = NotetakerController(preferences: preferences, dictionary: dictionary)
+    private let meetingItem = NSMenuItem(title: "Record Meeting", action: #selector(toggleMeeting), keyEquivalent: "")
     private lazy var dictation = DictationController(preferences: preferences, history: history, dictionary: dictionary)
     private var pasteLastShortcut: GlobalShortcut?
     private lazy var mainWindow = MainWindowController { [unowned self] in
-        MainView(history: self.history, preferences: self.preferences, dictionary: self.dictionary, onChangeAPIKey: { [unowned self] in self.setAPIKey() })
+        MainView(history: self.history, preferences: self.preferences, dictionary: self.dictionary, notetaker: self.notetaker, onChangeAPIKey: { [unowned self] in self.setAPIKey() })
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -58,6 +61,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let openItem = NSMenuItem(title: "Open Susurramelo…", action: #selector(openMainWindow), keyEquivalent: "o")
         openItem.target = self
         menu.addItem(openItem)
+        meetingItem.target = self
+        menu.addItem(meetingItem)
         menu.addItem(.separator())
         pasteLastItem.target = self
         pasteLastItem.keyEquivalent = "v"
@@ -90,6 +95,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func promptForAccessibilityIfNeeded() {
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
         _ = AXIsProcessTrustedWithOptions(options)
+    }
+
+    @objc private func toggleMeeting() {
+        if notetaker.isRecording {
+            notetaker.stopRecording()
+        } else {
+            do { try notetaker.startRecording() } catch { render(.error("Could not record meeting: \(error.localizedDescription)")) }
+        }
     }
 
     @objc private func openMainWindow() {
@@ -127,6 +140,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 extension AppDelegate: NSMenuDelegate {
     func menuWillOpen(_ menu: NSMenu) {
         accessibilityItem.isHidden = AXIsProcessTrusted()
+        if notetaker.isRecording, let started = notetaker.recordingStartedAt {
+            meetingItem.title = "Stop Meeting Recording (\(Meeting.clock(Date().timeIntervalSince(started))))"
+        } else {
+            meetingItem.title = "Record Meeting"
+        }
         let last = history.history.last
         pasteLastItem.isEnabled = last != nil
         lastPreviewItem.title = last.map { "   “" + Self.preview($0.text) + "”" } ?? "   No dictations yet"
